@@ -60,7 +60,7 @@ def run_bot():
     app.add_handler(CommandHandler("ru", language))
     app.add_handler(CommandHandler("en", language))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
-    app.run_polling()
+    app.run_polling(stop_signals=None)
 
 if __name__ == "__main__":
     threading.Thread(target=run_bot, daemon=True).start()
