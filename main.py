@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+from groq import Groq
 import threading
 from flask import Flask
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
