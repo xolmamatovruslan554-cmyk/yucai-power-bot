@@ -1,5 +1,8 @@
+
 import os
 import logging
+import threading
+from flask import Flask
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -12,6 +15,11 @@ from telegram.ext import (
 logging.basicConfig(level=logging.INFO)
 
 TOKEN = os.getenv("BOT_TOKEN")
+web = Flask(__name__)
+
+@web.get("/")
+def home():
+    return "YUCAI POWER bot is running", 200
 
 WELCOME = {
     "uz": "Assalomu alaykum! YUCAI POWER kompaniyasiga xush kelibsiz. Generator tanlash uchun savolingizni yozing.",
@@ -42,7 +50,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
     await update.message.reply_text(messages[lang])
 
-def main():
+def run_bot():
     if not TOKEN:
         raise RuntimeError("BOT_TOKEN environment variable is missing")
 
@@ -55,4 +63,6 @@ def main():
     app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    threading.Thread(target=run_bot, daemon=True).start()
+    port = int(os.environ.get("PORT", 10000))
+    web.run(host="0.0.0.0", port=port)
