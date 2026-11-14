@@ -3,62 +3,158 @@ import os
 import logging
 import threading
 from flask import Flask
-from telegram import Update
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters,
+    Application, CommandHandler, MessageHandler,
+    ContextTypes, filters
 )
 
 logging.basicConfig(level=logging.INFO)
 
 TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_IDS = [8493734628, 8738794018]
+
 web = Flask(__name__)
 
 @web.get("/")
 def home():
     return "YUCAI POWER bot is running", 200
 
-WELCOME = {
-    "uz": "Assalomu alaykum! YUCAI POWER kompaniyasiga xush kelibsiz. Generator tanlash uchun savolingizni yozing.",
-    "ru": "Здравствуйте! Добро пожаловать в YUCAI POWER. Напишите, какой генератор вас интересует.",
-    "en": "Hello! Welcome to YUCAI POWER. Tell us what generator you are looking for."
+TEXTS = {
+    "uz": {
+        "welcome": "⚡ YUCAI POWER | UZBEKISTAN\n\nTilni tanlang:",
+        "ask_power": "Generator quvvati qancha kW bo‘lishi kerak?",
+        "ask_place": "Generator qayerda va nima maqsadda ishlatiladi?",
+        "ask_fuel": "Qaysi yoqilg‘i turi kerak? Dizel, gaz yoki boshqa?",
+        "ask_phone": "Telefon raqamingizni yuborish tugmasini bosing.",
+        "phone": "📱 Telefon raqamni yuborish",
+        "done": "Rahmat! Buyurtmangiz menejerlarimizga yuborildi. Tez orada bog‘lanishadi.",
+        "cancel": "Buyurtma bekor qilindi. Yangi buyurtma uchun /start bosing."
+    },
+    "ru": {
+        "welcome": "⚡ YUCAI POWER | UZBEKISTAN\n\nВыберите язык:",
+        "ask_power": "Какая мощность генератора нужна (кВт)?",
+        "ask_place": "Где и для чего будет использоваться генератор?",
+        "ask_fuel": "Какое топливо нужно? Дизель, газ или другое?",
+        "ask_phone": "Нажмите кнопку, чтобы отправить номер телефона.",
+        "phone": "📱 Отправить номер телефона",
+        "done": "Спасибо! Ваша заявка отправлена менеджерам. Скоро с вами свяжутся.",
+        "cancel": "Заявка отменена. Для новой заявки нажмите /start."
+    },
+    "en": {
+        "welcome": "⚡ YUCAI POWER | UZBEKISTAN\n\nChoose your language:",
+        "ask_power": "What generator capacity do you need (kW)?",
+        "ask_place": "Where and for what purpose will it be used?",
+        "ask_fuel": "Which fuel do you need? Diesel, gas or other?",
+        "ask_phone": "Press the button to share your phone number.",
+        "phone": "📱 Share phone number",
+        "done": "Thank you! Your request has been sent to our managers. They will contact you soon.",
+        "cancel": "Request cancelled. Press /start to begin again."
+    }
 }
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
     await update.message.reply_text(
         "⚡ YUCAI POWER | UZBEKISTAN\n\n"
         "Tilni tanlang / Выберите язык / Choose language:\n\n"
-        "/uz — O‘zbekcha\n"
-        "/ru — Русский\n"
-        "/en — English"
+        "/uz — O‘zbekcha\n/ru — Русский\n/en — English"
     )
 
 async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = update.message.text[1:]
     context.user_data["lang"] = lang
-    await update.message.reply_text(WELCOME[lang])
+    context.user_data["step"] = "power"
+    await update.message.reply_text(TEXTS[lang]["welcome"])
+    await update.message.reply_text(TEXTS[lang]["ask_power"])
 
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "uz")
-    messages = {
-        "uz": "Savolingiz qabul qilindi. Menejerimiz tez orada siz bilan bog‘lanadi.",
-        "ru": "Ваш вопрос принят. Наш менеджер скоро свяжется с вами.",
-        "en": "Your message has been received. Our manager will contact you soon."
-    }
-    await update.message.reply_text(messages[lang])
+    step = context.user_data.get("step")
+    msg = update.message
+
+    if not step:
+        await msg.reply_text("Boshlash uchun /start bosing.")
+        return
+
+    if step == "power":
+        context.user_data["power"] = msg.text
+        context.user_data["step"] = "place"
+        await msg.reply_text(TEXTS[lang]["ask_place"])
+
+    elif step == "place":
+        context.user_data["place"] = msg.text
+        context.user_data["step"] = "fuel"
+        await msg.reply_text(TEXTS[lang]["ask_fuel"])
+
+    elif step == "fuel":
+        context.user_data["fuel"] = msg.text
+        context.user_data["step"] = "phone"
+        keyboard = [[KeyboardButton(
+            TEXTS[lang]["phone"], request_contact=True
+        )]]
+        await msg.reply_text(
+            TEXTS[lang]["ask_phone"],
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard, resize_keyboard=True, one_time_keyboard=True
+            )
+        )
+
+async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = context.user_data.get("lang", "uz")
+
+    if context.user_data.get("step") != "phone":
+        return
+
+    contact = update.message.contact
+    if contact.user_id != update.effective_user.id:
+        await update.message.reply_text("Iltimos, o‘zingizning raqamingizni yuboring.")
+        return
+
+    user = update.effective_user
+    username = f"@{user.username}" if user.username else "Yo‘q"
+
+    order = (
+        "⚡ YANGI YUCAI POWER BUYURTMASI\n\n"
+        f"👤 Ism: {user.full_name}\n"
+        f"🔗 Username: {username}\n"
+        f"🆔 Telegram ID: {user.id}\n"
+        f"⚡ Quvvat: {context.user_data.get('power')}\n"
+        f"📍 Joylashuv/maqsad: {context.user_data.get('place')}\n"
+        f"⛽ Yoqilg‘i: {context.user_data.get('fuel')}\n"
+        f"📞 Telefon: {contact.phone_number}"
+    )
+
+    sent = 0
+    for admin_id in ADMIN_IDS:
+        try:
+            await context.bot.send_message(chat_id=admin_id, text=order)
+            sent += 1
+        except Exception:
+            logging.exception("Admin %s ga xabar yuborilmadi", admin_id)
+
+    context.user_data.clear()
+    if sent == len(ADMIN_IDS):
+        await update.message.reply_text(
+            TEXTS[lang]["done"], reply_markup=ReplyKeyboardRemove()
+        )
+    else:
+        await update.message.reply_text(
+            "Buyurtma qabul qilindi, lekin menejerlarga xabar yuborishda "
+            "muammo yuz berdi. Iltimos, qayta urinib ko‘ring.",
+            reply_markup=ReplyKeyboardRemove()
+        )
 
 def run_bot():
     if not TOKEN:
-        raise RuntimeError("BOT_TOKEN environment variable is missing")
+        raise RuntimeError("BOT_TOKEN missing")
 
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("uz", language))
     app.add_handler(CommandHandler("ru", language))
     app.add_handler(CommandHandler("en", language))
+    app.add_handler(MessageHandler(filters.CONTACT, get_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
     app.run_polling(stop_signals=None)
 
@@ -66,3 +162,4 @@ if __name__ == "__main__":
     threading.Thread(target=run_bot, daemon=True).start()
     port = int(os.environ.get("PORT", 10000))
     web.run(host="0.0.0.0", port=port)
+
