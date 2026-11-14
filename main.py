@@ -1,5 +1,6 @@
 
 import os
+import sys
 import logging
 import threading
 from flask import Flask
@@ -9,7 +10,11 @@ from telegram.ext import (
     ContextTypes, filters
 )
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(asctime)s %(levelname)s %(message)s"
+)
 
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [8493734628, 8738794018]
@@ -22,34 +27,28 @@ def home():
 
 TEXTS = {
     "uz": {
-        "welcome": "⚡ YUCAI POWER | UZBEKISTAN\n\nTilni tanlang:",
-        "ask_power": "Generator quvvati qancha kW bo‘lishi kerak?",
-        "ask_place": "Generator qayerda va nima maqsadda ishlatiladi?",
-        "ask_fuel": "Qaysi yoqilg‘i turi kerak? Dizel, gaz yoki boshqa?",
-        "ask_phone": "Telefon raqamingizni yuborish tugmasini bosing.",
-        "phone": "📱 Telefon raqamni yuborish",
-        "done": "Rahmat! Buyurtmangiz menejerlarimizga yuborildi. Tez orada bog‘lanishadi.",
-        "cancel": "Buyurtma bekor qilindi. Yangi buyurtma uchun /start bosing."
+        "power": "Generator quvvati qancha kW bo‘lishi kerak?",
+        "place": "Generator qayerda va nima maqsadda ishlatiladi?",
+        "fuel": "Qaysi yoqilg‘i turi kerak? Dizel yoki gaz (gaz generatori buyurtma asosida olib kelinadi).",
+        "phone": "Telefon raqamingizni yuborish tugmasini bosing.",
+        "button": "📱 Telefon raqamni yuborish",
+        "done": "Rahmat! Buyurtmangiz menejerlarga yuborildi."
     },
     "ru": {
-        "welcome": "⚡ YUCAI POWER | UZBEKISTAN\n\nВыберите язык:",
-        "ask_power": "Какая мощность генератора нужна (кВт)?",
-        "ask_place": "Где и для чего будет использоваться генератор?",
-        "ask_fuel": "Какое топливо нужно? Дизель, газ или другое?",
-        "ask_phone": "Нажмите кнопку, чтобы отправить номер телефона.",
-        "phone": "📱 Отправить номер телефона",
-        "done": "Спасибо! Ваша заявка отправлена менеджерам. Скоро с вами свяжутся.",
-        "cancel": "Заявка отменена. Для новой заявки нажмите /start."
+        "power": "Какая мощность генератора нужна (кВт)?",
+        "place": "Где и для чего будет использоваться генератор?",
+        "fuel": "Какое топливо нужно? Дизель или газ (газовый генератор доступен под заказ).",
+        "phone": "Нажмите кнопку, чтобы отправить номер телефона.",
+        "button": "📱 Отправить номер телефона",
+        "done": "Спасибо! Ваша заявка отправлена менеджерам."
     },
     "en": {
-        "welcome": "⚡ YUCAI POWER | UZBEKISTAN\n\nChoose your language:",
-        "ask_power": "What generator capacity do you need (kW)?",
-        "ask_place": "Where and for what purpose will it be used?",
-        "ask_fuel": "Which fuel do you need? Diesel, gas or other?",
-        "ask_phone": "Press the button to share your phone number.",
-        "phone": "📱 Share phone number",
-        "done": "Thank you! Your request has been sent to our managers. They will contact you soon.",
-        "cancel": "Request cancelled. Press /start to begin again."
+        "power": "What generator capacity do you need (kW)?",
+        "place": "Where and for what purpose will it be used?",
+        "fuel": "Which fuel do you need? Diesel or gas (gas generators are available by special order).",
+        "phone": "Press the button to share your phone number.",
+        "button": "📱 Share phone number",
+        "done": "Thank you! Your request has been sent to our managers."
     }
 }
 
@@ -65,8 +64,7 @@ async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = update.message.text[1:]
     context.user_data["lang"] = lang
     context.user_data["step"] = "power"
-    await update.message.reply_text(TEXTS[lang]["welcome"])
-    await update.message.reply_text(TEXTS[lang]["ask_power"])
+    await update.message.reply_text(TEXTS[lang]["power"])
 
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "uz")
@@ -80,21 +78,21 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if step == "power":
         context.user_data["power"] = msg.text
         context.user_data["step"] = "place"
-        await msg.reply_text(TEXTS[lang]["ask_place"])
+        await msg.reply_text(TEXTS[lang]["place"])
 
     elif step == "place":
         context.user_data["place"] = msg.text
         context.user_data["step"] = "fuel"
-        await msg.reply_text(TEXTS[lang]["ask_fuel"])
+        await msg.reply_text(TEXTS[lang]["fuel"])
 
     elif step == "fuel":
         context.user_data["fuel"] = msg.text
         context.user_data["step"] = "phone"
         keyboard = [[KeyboardButton(
-            TEXTS[lang]["phone"], request_contact=True
+            TEXTS[lang]["button"], request_contact=True
         )]]
         await msg.reply_text(
-            TEXTS[lang]["ask_phone"],
+            TEXTS[lang]["phone"],
             reply_markup=ReplyKeyboardMarkup(
                 keyboard, resize_keyboard=True, one_time_keyboard=True
             )
@@ -108,7 +106,9 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     contact = update.message.contact
     if contact.user_id != update.effective_user.id:
-        await update.message.reply_text("Iltimos, o‘zingizning raqamingizni yuboring.")
+        await update.message.reply_text(
+            "Iltimos, o‘zingizning raqamingizni yuboring."
+        )
         return
 
     user = update.effective_user
@@ -126,40 +126,51 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     sent = 0
+
     for admin_id in ADMIN_IDS:
         try:
-            await context.bot.send_message(chat_id=admin_id, text=order)
+            await context.bot.send_message(
+                chat_id=admin_id,
+                text=order
+            )
             sent += 1
+            logging.info("BUYURTMA ADMIN %s GA YUBORILDI", admin_id)
+
         except Exception:
-            logging.exception("Admin %s ga xabar yuborilmadi", admin_id)
+            logging.exception("ADMIN %s GA XABAR YUBORILMADI", admin_id)
 
     context.user_data.clear()
+
     if sent == len(ADMIN_IDS):
         await update.message.reply_text(
-            TEXTS[lang]["done"], reply_markup=ReplyKeyboardRemove()
+            TEXTS[lang]["done"],
+            reply_markup=ReplyKeyboardRemove()
         )
     else:
         await update.message.reply_text(
-            "Buyurtma qabul qilindi, lekin menejerlarga xabar yuborishda "
-            "muammo yuz berdi. Iltimos, qayta urinib ko‘ring.",
+            f"Buyurtma qabul qilindi. Menejerlarga xabar yuborishda muammo: "
+            f"{sent}/{len(ADMIN_IDS)} ta xabar yetkazildi.",
             reply_markup=ReplyKeyboardRemove()
         )
 
 def run_bot():
     if not TOKEN:
-        raise RuntimeError("BOT_TOKEN missing")
+        raise RuntimeError("BOT_TOKEN topilmadi!")
 
     app = Application.builder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("uz", language))
     app.add_handler(CommandHandler("ru", language))
     app.add_handler(CommandHandler("en", language))
     app.add_handler(MessageHandler(filters.CONTACT, get_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
+
     app.run_polling(stop_signals=None)
 
 if __name__ == "__main__":
     threading.Thread(target=run_bot, daemon=True).start()
     port = int(os.environ.get("PORT", 10000))
     web.run(host="0.0.0.0", port=port)
+
 
