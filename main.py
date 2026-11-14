@@ -63,7 +63,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Tilni tanlang / Выберите язык / Choose language:\n\n"
         "/uz — O‘zbekcha\n"
         "/ru — Русский\n"
-        "/en — English"
+        "/en — English\n"
+   "/ai — AI konsultant"
     ) 
 
 async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -71,7 +72,12 @@ async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["lang"] = lang
     context.user_data["step"] = "power"
     await update.message.reply_text(TEXTS[lang]["power"])
-
+async def ai_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["step"] = "ai"
+    await update.message.reply_text(
+        "🤖 YUCAI POWER AI konsultantiga xush kelibsiz!\n"
+        "Generator haqida savolingizni yozing."
+    )
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "uz")
     step = context.user_data.get("step")
@@ -196,6 +202,7 @@ def run_bot():
     app.add_handler(CommandHandler("uz", language))
     app.add_handler(CommandHandler("ru", language))
     app.add_handler(CommandHandler("en", language))
+    app.add_handler(CommandHandler("ai", ai_start))
     app.add_handler(MessageHandler(filters.CONTACT, get_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
 
