@@ -75,7 +75,34 @@ async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "uz")
     step = context.user_data.get("step")
-    msg = update.message
+    msg = update.message     
+    if step == "ai":
+        try:
+            response = await groq_client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Sen YUCAI POWER kompaniyasining "
+                            "generator bo‘yicha konsultantisan. "
+                            "O‘zbek, rus va ingliz tillarida javob ber. "
+                            "Mijozga generator tanlashda yordam ber. "
+                            "Narx va texnik ma'lumotlarni o‘ylab topma."
+                        )
+                    },
+                    {"role": "user", "content": msg.text}
+                ],
+                max_tokens=500
+            )
+            answer = response.choices[0].message.content
+            await msg.reply_text(answer)
+
+        except Exception:
+            logging.exception("GROQ AI XATOSI")
+            await msg.reply_text("Kechirasiz, hozir javob bera olmadim.")
+
+        return
 
     if not step:
         await msg.reply_text("Boshlash uchun /start bosing.")
