@@ -55,10 +55,14 @@ TEXTS = {
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await update.message.reply_text(
-        "⚡ YUCAI POWER | UZBEKISTAN\n\n"
+        "⚡ Assalomu alaykum!\n"
+        "YUCAI POWER | UZBEKISTAN ga xush kelibsiz!\n"
+        "Sizga generator tanlashda yordam beramiz.\n\n"
         "Tilni tanlang / Выберите язык / Choose language:\n\n"
-        "/uz — O‘zbekcha\n/ru — Русский\n/en — English"
-    )
+        "/uz — O‘zbekcha\n"
+        "/ru — Русский\n"
+        "/en — English"
+    ) 
 
 async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = update.message.text[1:]
