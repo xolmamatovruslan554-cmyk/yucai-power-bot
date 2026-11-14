@@ -2,7 +2,7 @@
 import os
 import sys
 import logging
-from groq import Groq
+from groq import AsyncGroq
 import threading
 from flask import Flask
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
@@ -17,7 +17,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s"
 )
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 ADMIN_IDS = [8493734628, 8738794018]
 
 web = Flask(__name__)
