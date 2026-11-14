@@ -191,7 +191,6 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{sent}/{len(ADMIN_IDS)} ta xabar yetkazildi.",
             reply_markup=ReplyKeyboardRemove()
         )
-
 def run_bot():
     if not TOKEN:
         raise RuntimeError("BOT_TOKEN topilmadi!")
