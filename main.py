@@ -1,4 +1,3 @@
-main.py 
 import os
 import logging
 from telegram import Update
@@ -44,6 +43,9 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(messages[lang])
 
 def main():
+    if not TOKEN:
+        raise RuntimeError("BOT_TOKEN environment variable is missing")
+
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("uz", language))
