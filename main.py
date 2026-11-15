@@ -149,7 +149,7 @@ Har doim professional, ishonchli va samimiy bo‘l.
             )
             answer = response.choices[0].message.content
             history.append({"role": "assistant", "content": answer})
-context.user_data["ai_history"] = history[-10:]
+            context.user_data["ai_history"] = history[-10:]
             await msg.reply_text(answer)
 
         except Exception:
