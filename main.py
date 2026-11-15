@@ -88,9 +88,8 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "uz")
     step = context.user_data.get("step")
     msg = update.message     
-    if step == "ai":
-        history = 
-context.user_data.setdefault("ai_history", [])
+        if step == "ai":
+        history = context.user_data.setdefault("ai_history", [])
         history.append({"role": "user", "content": msg.text})
         try:
             response = await groq_client.chat.completions.create(
