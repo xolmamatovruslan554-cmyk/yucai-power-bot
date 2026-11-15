@@ -14,7 +14,7 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardR
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     ContextTypes, filters
-)
+) 
 
 logging.basicConfig(
     level=logging.INFO,
@@ -249,6 +249,7 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=ReplyKeyboardRemove()
         )
 def run_bot():
+    print("TELEGRAM BOT ISHGA TUSHDI", flush=True)
     if not TOKEN:
         raise RuntimeError("BOT_TOKEN topilmadi!")
 
