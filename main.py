@@ -39,7 +39,7 @@ TEXTS = {
         "fuel": "Qaysi yoqilg‘i turi kerak? Dizel yoki gaz (gaz generatori buyurtma asosida olib kelinadi).",
         "phone": "Telefon raqamingizni yuborish tugmasini bosing.",
         "button": "📱 Telefon raqamni yuborish",
-        "done": "Rahmat! Buyurtmangiz menejerlarga yuborildi."
+        "done": "✅ Rahmat! Buyurtmangiz menejerlarga yuborildi.\n\n📞 Tez orada menejerimiz siz bilan bog‘lanadi."
     },
     "ru": {
         "power": "Какая мощность генератора нужна (кВт)?",
