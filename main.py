@@ -93,7 +93,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         history.append({"role": "user", "content": msg.text})
         try:
             response = await groq_client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model="qwen/qwen3.8-27b",
                 messages=[
                     {
                         "role": "system",
