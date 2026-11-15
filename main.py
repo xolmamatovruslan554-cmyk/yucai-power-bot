@@ -79,6 +79,7 @@ async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(TEXTS[lang]["power"])
 async def ai_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["step"] = "ai"
+    context.user_data["ai_history"] = []
     await update.message.reply_text(
         "🤖 YUCAI POWER AI konsultantiga xush kelibsiz!\n"
         "Generator haqida savolingizni yozing."
@@ -88,25 +89,67 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     step = context.user_data.get("step")
     msg = update.message     
     if step == "ai":
+history = context.user_data.setdefault("ai_history", [])
+history.append({"role": "user", "content": msg.text})
         try:
             response = await groq_client.chat.completions.create(
                 model="openai/gpt-oss-20b",
                 messages=[
                     {
                         "role": "system",
-                        "content": (
-                            "Sen YUCAI POWER kompaniyasining "
-                            "generator bo‘yicha konsultantisan. "
-                            "O‘zbek, rus va ingliz tillarida javob ber. "
-                            "Mijozga generator tanlashda yordam ber. "
-                            "Narx va texnik ma'lumotlarni o‘ylab topma."
-                        )
+                        
+"content": """
+Sen YUCAI POWER kompaniyasining professional AI generator konsultantisan.
+
+ASOSIY VAZIFANG:
+Mijozlarga generator tanlash, texnik maslahat berish va buyurtma berishda yordam berish.
+
+TIL:
+- Mijoz qaysi tilda yozsa, shu tilda javob ber.
+- O‘zbek, rus va ingliz tillarini mukammal tushun.
+- Tabiiy, tushunarli va professional yoz.
+
+MULOQOT:
+- Mijoz bilan xushmuomala gaplash.
+- Javoblarni qisqa, aniq va foydali ber.
+- Bir vaqtning o‘zida juda ko‘p savol bermagin.
+- Kerakli ma'lumotlarni bittadan so‘ra.
+- Mijozni ortiqcha savollar bilan charchatma.
+
+GENERATOR TANLASH:
+Quyidagilarni aniqlashga yordam ber:
+- Kerakli quvvat (kW yoki kVA).
+- Dizel yoki gaz generatori.
+- Bir fazali yoki uch fazali elektr ta'minoti.
+- Ishlatish maqsadi.
+- Doimiy yoki zaxira elektr ta'minoti.
+- Ishlash sharoiti.
+
+TEXNIK QOIDALAR:
+- kW va kVA birliklarini adashtirma.
+- Generator quvvatini tanlashda ishga tushish toki va yuklamani hisobga ol.
+- Aniq bo‘lmagan texnik ma'lumotlarni to‘qima.
+- Tasdiqlanmagan narxlarni aytma.
+- Kompaniya katalogida yo‘q mahsulotni mavjud deb ko‘rsatma.
+- Bilmagan savolingga halol javob ber.
+
+SOTUV:
+- Mijozga mos generatorni aniqlashga yordam ber.
+- Mijoz sotib olishga tayyor bo‘lsa, menejer bilan bog‘lanishni taklif qil.
+- Buyurtmani o‘zing tasdiqlama.
+- Menejer nomidan va'da berma.
+
+O‘ZINGNI YUCAI POWER AI KONSULTANTI SIFATIDA TANIT.
+Har doim professional, ishonchli va samimiy bo‘l.
+"""
                     },
-                    {"role": "user", "content": msg.text}
+                    *history[-10:]
                 ],
                 max_tokens=500
             )
             answer = response.choices[0].message.content
+            history.append({"role": "assistant", "content": answer})
+context.user_data["ai_history"] = history[-10:]
             await msg.reply_text(answer)
 
         except Exception:
