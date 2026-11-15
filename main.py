@@ -5,6 +5,11 @@ import logging
 from groq import AsyncGroq
 import threading
 from flask import Flask
+web = Flask(__name__)
+
+@web.route("/")
+def home():
+    return "YUCAI POWER BOT IS RUNNING", 200
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
